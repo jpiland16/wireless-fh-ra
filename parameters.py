@@ -87,6 +87,7 @@ class Parameters:
             f"\n - sigma_squared: {self.sigma_squared}" + 
             f"\n - Transmission power at receivier: {self.p_recv}" + 
             f"\n - Rates: {self.rates} Mbps" +
+            f"\n" +
             f"\n### Calculated Parameters ###" + 
             f"\n - SINR limits: {self.sinr_limits}" + 
             f"\n - Jammer power levels: {self.p_jam}" +
