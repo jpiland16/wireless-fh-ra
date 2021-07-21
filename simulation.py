@@ -121,3 +121,30 @@ class Simulation:
         return sum([self.get_immediate_transmitter_payoff(action, 
             jammer_power_index, x_prime) * transition_probabilities[x_prime] 
             for x_prime in self.state_space])
+
+    def get_reward_matrix(self, state: str):
+        """
+        Listed as R(x) in the paper.
+        """
+        return np.array([
+                [self.get_immediate_transmitter_reward(state, action, 
+                jammer_power_index) for jammer_power_index 
+                in range(0, self.params.m + 1)] 
+            for action in self.action_space])
+
+    def get_transition_matrix(self, state: str, value_function: callable):
+        """
+        Listed as T(x) in the paper.
+        """
+
+        matrix = []
+
+        for action in self.action_space:
+            matrix.append([])
+            for jammer_power_index in range(0, self.params.m + 1):
+                transition_probabilities = self.get_transition_probabilities(
+                    state, action, jammer_power_index)
+                matrix[-1].append(sum([transition_probabilities[x_prime]] for 
+                    x_prime in self.state_space))
+
+        return np.array(matrix)
