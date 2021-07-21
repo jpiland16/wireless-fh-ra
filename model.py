@@ -7,7 +7,7 @@ alpha = 1
 sigma_squared = 0.01
 p_recv = 1
 
-class Simulation:
+class Model:
     def __init__(self, parameters: Parameters = Parameters(
             k = 4,
             m = 7,
@@ -144,7 +144,8 @@ class Simulation:
             for jammer_power_index in range(0, self.params.m + 1):
                 transition_probabilities = self.get_transition_probabilities(
                     state, action, jammer_power_index)
-                matrix[-1].append(sum([transition_probabilities[x_prime]] for 
-                    x_prime in self.state_space))
+                matrix[-1].append(sum([transition_probabilities[x_prime] 
+                    * value_function(x_prime) 
+                    for x_prime in self.state_space]))
 
         return np.array(matrix)
