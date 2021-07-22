@@ -141,3 +141,23 @@ def validate_jammer_strategy(parameters: Parameters, y: 'list[float]'):
     jammer_validate("sum of elements", 1, sum(y))
     jammer_validate("power constraint satisfied", True, np.dot(
         parameters.p_jam, y) <= parameters.p_avg)
+
+def get_default_parameters():    
+    p_max = 2
+    alpha = 1
+    sigma_squared = 0.01
+    p_recv = 1
+
+    return Parameters(
+        k = 4,
+        m = 7,
+        p_avg = 0.83 * p_max,
+        p_max = p_max,
+        c = 50,
+        l = 25,
+        n = 1, 
+        alpha = alpha,
+        sigma_squared = sigma_squared,
+        p_recv = p_recv,
+        rates = [6, 9, 12, 18, 24, 36, 48, 54]
+    )
