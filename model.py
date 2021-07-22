@@ -18,8 +18,8 @@ class Model:
         return states
         
     def get_action_space(self):
-        return [ "s" + str(rate) for rate in self.params.rates ] + \
-            [ "h" + str(rate) for rate in self.params.rates]
+        return [ "s" + str(i) for i, _ in enumerate(self.params.rates) ] + \
+            [ "h" + str(i) for i, _ in enumerate(self.params.rates)]
         
 
     def get_immediate_transmitter_payoff(self, action: str, 

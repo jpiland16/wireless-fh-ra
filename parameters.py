@@ -117,10 +117,11 @@ class Parameters:
 def validate_transmit_strategy(parameters: Parameters, f: 'dict',
         state_space: 'list[str]', action_space: 'list[str]'):
     
-    validate_param("state space", "size", math.floor(parameters.k 
+    validate_param("state space", "size", math.ceil(parameters.k 
         / parameters.m), len(state_space))
     
-    validate_param("action space", "size", parameters.k)
+    validate_param("action space", "size", (parameters.m + 1) * 2, 
+        len(action_space))
 
     def transmit_validate(p_name: str, expected, actual):
         validate_param("transmit strategy", p_name, expected, actual)
@@ -132,9 +133,9 @@ def validate_transmit_strategy(parameters: Parameters, f: 'dict',
             transmit_validate(f"0 <= f[{state}][{action}] <= 1", 
                 True, 0 <= p and p <= 1)
             action_p_sum += p
-        transmit_validate(f"sum of f[{state}]", 1, action_p_sum)
-        transmit_validate(f"number of actions in f[{state}]", len(action_space), 
-            len(f[state]))
+        transmit_validate(f"sum of f[\"{state}\"]", 1, action_p_sum)
+        transmit_validate(f"number of actions in f[\"{state}\"]", 
+            len(action_space), len(f[state]))
 
     transmit_validate("number of states in f", len(state_space), len(f))
 
