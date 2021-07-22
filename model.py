@@ -1,9 +1,9 @@
 import math
 import numpy as np
-from parameters import Parameters
+from parameters import Parameters, get_default_parameters
 
 class Model:
-    def __init__(self, parameters: Parameters):
+    def __init__(self, parameters: Parameters = get_default_parameters()):
 
         self.params = parameters
         self.state_space = self.get_state_space()

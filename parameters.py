@@ -14,7 +14,7 @@ def validate_param(msg: str, p_name: str, expected, actual):
 class Parameters:
     def __init__(self, k: int, m: int, p_avg: float, p_max: float, c: int, 
             l: int, n: int, alpha: float, sigma_squared: float, p_recv: float,
-            rates: 'list[int]'):
+            rates: 'list[int]', t: int):
         """
         Parameters:
          - `k`: the number of channels
@@ -32,6 +32,7 @@ class Parameters:
                 receiver 
          - `p_recv`: the power of the transmitted signal, at the receiver
          - `rates`: the rates at which the transmitter can communicate
+         - `t`: the number of time intervals in the game
         """
         self.k = k
         self.m = m
@@ -44,6 +45,7 @@ class Parameters:
         self.sigma_squared = sigma_squared
         self.p_recv = p_recv
         self.rates = rates
+        self.t = t
 
         validate_param("simulation parameters", "(m == len(rates) - 1)", True, 
             m == len(rates) - 1)
@@ -74,6 +76,14 @@ class Parameters:
         self.p_jam = [ ((self.p_recv / self.sinr_limits[self.m - i]) 
             - self.sigma_squared) / self.alpha for i in range(self.m + 1)]
 
+    def get_single_channel_attack_sinr(self, jammer_power_index: int):
+        """
+        Calculate the SINR when the jammer performs a single-channel attack
+        """
+        jam_power = self.p_jam[jammer_power_index]
+        return self.p_recv / (self.alpha * self.n * jam_power 
+            + self.sigma_squared)
+
     def __str__(self):
         return (
               f"### Simulation Parameters ### " + 
@@ -88,6 +98,7 @@ class Parameters:
             f"\n - sigma_squared: {self.sigma_squared}" + 
             f"\n - Transmission power at receivier: {self.p_recv}" + 
             f"\n - Rates: {self.rates} Mbps" +
+            f"\n - Number of timesteps: {self.t}" +
             f"\n" +
             f"\n### Calculated Parameters ###" + 
             f"\n - SINR limits: {self.sinr_limits}" + 
@@ -100,7 +111,7 @@ class Parameters:
             + f"p_max = {self.p_max}, c = {self.c}, l = {self.l}, "
             + f"n = {self.n}, alpha = {self.alpha}, " 
             + f"sigma_squared = {self.sigma_squared}, p_recv = {self.p_recv}, "
-            + f"rates = {self.rates})"    
+            + f"rates = {self.rates}, t = {self.t})"    
         )
 
 def validate_transmit_strategy(parameters: Parameters, f: 'dict',
@@ -159,5 +170,6 @@ def get_default_parameters():
         alpha = alpha,
         sigma_squared = sigma_squared,
         p_recv = p_recv,
-        rates = [6, 9, 12, 18, 24, 36, 48, 54]
+        rates = [6, 9, 12, 18, 24, 36, 48, 54],
+        t = 500
     )
