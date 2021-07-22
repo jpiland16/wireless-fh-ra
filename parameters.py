@@ -1,4 +1,5 @@
 import numpy as np
+import math
 
 def validate_param(msg: str, p_name: str, expected, actual):
         """
@@ -102,13 +103,41 @@ class Parameters:
             + f"rates = {self.rates})"    
         )
 
+def validate_transmit_strategy(parameters: Parameters, f: 'dict',
+        state_space: 'list[str]', action_space: 'list[str]'):
+    
+    validate_param("state space", "size", math.floor(parameters.k 
+        / parameters.m), len(state_space))
+    
+    validate_param("action space", "size", parameters.k)
 
-def validate_jammer_strategy(parameters: Parameters, js: 'list[float]'):
+    def transmit_validate(p_name: str, expected, actual):
+        validate_param("transmit strategy", p_name, expected, actual)
+    
+    for state in state_space:
+        action_p_sum = 0
+        for action in action_space:
+            p = f[state][action]
+            transmit_validate(f"0 <= f[{state}][{action}] <= 1", 
+                True, 0 <= p and p <= 1)
+            action_p_sum += p
+        transmit_validate(f"sum of f[{state}]", 1, action_p_sum)
+        transmit_validate(f"number of actions in f[{state}]", len(action_space), 
+            len(f[state]))
+
+    transmit_validate("number of states in f", len(state_space), len(f))
+
+
+def validate_jammer_strategy(parameters: Parameters, y: 'list[float]'):
 
     def jammer_validate(p_name: str, expected, actual):
         validate_param("jammer strategy", p_name, expected, actual)    
 
-    jammer_validate("number of elements", parameters.m + 1, len(js))
-    jammer_validate("sum of elements", 1, sum(js))
+    jammer_validate("number of elements", parameters.m + 1, len(y))
+
+    for i, yi in enumerate(y):
+        jammer_validate(f"0 <= y[{i}] <= 1", True, 0 <= yi and yi <= 1)
+
+    jammer_validate("sum of elements", 1, sum(y))
     jammer_validate("power constraint satisfied", True, np.dot(
-        parameters.p_jam, js) <= parameters.p_avg)
+        parameters.p_jam, y) <= parameters.p_avg)

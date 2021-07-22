@@ -2,26 +2,10 @@ import math
 import numpy as np
 from parameters import Parameters
 
-p_max = 2
-alpha = 1
-sigma_squared = 0.01
-p_recv = 1
-
 class Model:
-    def __init__(self, parameters: Parameters = Parameters(
-            k = 4,
-            m = 7,
-            p_avg = 0.83 * p_max,
-            p_max = p_max,
-            c = 50,
-            l = 25,
-            n = 1, 
-            alpha = alpha,
-            sigma_squared = sigma_squared,
-            p_recv = p_recv,
-            rates = [6, 9, 12, 18, 24, 36, 48, 54]) ):
+    def __init__(self, parameters: Parameters):
 
-        self.params = self.params
+        self.params = parameters
         self.state_space = self.get_state_space()
         self.action_space = self.get_action_space()
 
