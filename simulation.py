@@ -60,7 +60,7 @@ class Simulation:
         # Send/receive a message
         channel = self.current_tx_channel
         rate_index = self.current_tx_rate_index
-        jammer_power_index = random.choices(self.params.p_jam, self.y)
+        jammer_power_index = random.choices(self.params.p_jam, self.y)[0]
         message_was_jammed = (channel in self.current_jammed_channels and 
             jammer_power_index > self.params.m - rate_index) or (
                 self.jam_single_channel and 
@@ -93,7 +93,7 @@ class Simulation:
         # Choose the next action
         action_p_dict = self.f[self.state]
         tx_action = random.choices(self.model.action_space, [action_p_dict[k] 
-            for k in action_p_dict])
+            for k in action_p_dict])[0]
         
         if tx_action[0] == "s":
             # Stay
@@ -124,5 +124,6 @@ class Simulation:
         game_time = 0
         while game_time < self.params.t:
             self.play_turn()
+            game_time += 1
 
         return self.total_tx_reward

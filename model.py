@@ -12,7 +12,7 @@ class Model:
     def get_state_space(self):
         
         states = ["j"]
-        for i in range(math.floor(self.params.k / self.params.m) ):
+        for i in range(math.ceil(self.params.k / self.params.n) ):
             states.append(str(i))
             
         return states

@@ -118,7 +118,7 @@ def validate_transmit_strategy(parameters: Parameters, f: 'dict',
         state_space: 'list[str]', action_space: 'list[str]'):
     
     validate_param("state space", "size", math.ceil(parameters.k 
-        / parameters.m), len(state_space))
+        / parameters.n) + 1, len(state_space))
     
     validate_param("action space", "size", (parameters.m + 1) * 2, 
         len(action_space))
