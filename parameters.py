@@ -114,7 +114,27 @@ class Parameters:
             + f"rates = {self.rates}, t = {self.t})"    
         )
 
-def validate_transmit_strategy(parameters: Parameters, f: 'dict',
+    def convert_to_tuple(self):
+        return (
+            self.k,
+            self.m,
+            self.p_avg,
+            self.p_max,
+            self.c,
+            self.l,
+            self.n,
+            self.alpha,
+            self.sigma_squared,
+            self.p_recv,
+            self.rates,
+            self.t
+        )
+    
+    def get_from_tuple(t: tuple):
+        return Parameters(*t)
+
+
+def validate_transmit_strategy(parameters: Parameters, f: dict,
         state_space: 'list[str]', action_space: 'list[str]'):
     
     validate_param("state space", "size", math.ceil(parameters.k 

@@ -2,6 +2,7 @@ from markov import QTable
 from simulation import Simulation
 from parameters import Parameters, validate_transmit_strategy, \
     validate_jammer_strategy, get_default_parameters
+from optimize import convert_strategies_to_list, convert_list_to_strategies
 from model import Model
 from tqdm import tqdm
 import matplotlib.pyplot as plt
@@ -99,13 +100,45 @@ def test_qtable_as_f():
     validate_transmit_strategy(params, qtable, model.state_space, 
         model.action_space)
 
+def test_convert_parameters():
+
+    params = get_default_parameters()
+    same_params = Parameters.get_from_tuple(params.convert_to_tuple())
+
+    print(params)
+    print(same_params)
+
+def test_convert_strategies():
+
+    params =  get_default_parameters()
+    model = Model(params)
+
+    f = create_demo_transmit_strategy(params, model)
+    y = create_demo_jammer_strategy(params)
+
+    fp, yp = convert_list_to_strategies(params, 
+        convert_strategies_to_list(f, y))
+
+    def compare(a, b, name):
+        if a == b:
+            print(f"Conversion of {name} was successful.")
+        else:
+            print(f"WARNING: Conversion of {name} was not successful!")
+            print(a)
+            print(b)
+
+    compare(f, fp, "f")
+    compare(y, yp, "y")
+
 def main():
     # test_create_parameters()
     # test_validate_jammer_strategy()
     # test_validate_transmit_strategy()
     # test_run_simulation()
     # test_multiple_simulation()
-    test_qtable_as_f()
+    # test_qtable_as_f()
+    # test_convert_parameters()
+    test_convert_strategies()
 
 if __name__ == "__main__":
     main()

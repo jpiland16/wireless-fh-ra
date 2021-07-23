@@ -5,7 +5,7 @@ from parameters import Parameters, validate_jammer_strategy, \
 from model import Model
 
 class Simulation:
-    def __init__(self, f: 'dict', y: 'list[float]', parameters: 
+    def __init__(self, f: dict, y: 'list[float]', parameters: 
             Parameters = get_default_parameters(), initial_state: str = "j",
             debug: bool = False):
 
