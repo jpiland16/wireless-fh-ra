@@ -2,6 +2,9 @@ from simulation import Simulation
 from parameters import Parameters, validate_transmit_strategy, \
     validate_jammer_strategy, get_default_parameters
 from model import Model
+from tqdm import tqdm
+import matplotlib.pyplot as plt
+from statistics import stdev, median, mean
 
 def test_create_parameters():
 
@@ -58,16 +61,38 @@ def test_run_simulation():
     f = create_demo_transmit_strategy(params, model)
     y = create_demo_jammer_strategy(params)
 
-    simulation = Simulation(f, y, params, debug=True)
+    simulation = Simulation(f, y, params)
     tx_reward = simulation.run()
 
     print(f"Transmitter reward: {tx_reward}")
+
+def test_multiple_simulation():
+    
+    params = get_default_parameters()
+    model = Model(params)
+
+    f = create_demo_transmit_strategy(params, model)
+    y = create_demo_jammer_strategy(params)
+
+    simulation = Simulation(f, y, params)
+    tx_rewards = []
+
+    for _ in tqdm(range(2000)):
+        tx_rewards.append(simulation.run())
+    
+    plt.hist(tx_rewards, bins = 200)
+    plt.show()
+    print(f"Avg. reward: {mean(tx_rewards)}, " + 
+          f"Med. reward: {median(tx_rewards)}, " +
+          f"Std. dev: {stdev(tx_rewards)}"
+    )
 
 def main():
     # test_create_parameters()
     # test_validate_jammer_strategy()
     # test_validate_transmit_strategy()
-    test_run_simulation()
+    # test_run_simulation()
+    test_multiple_simulation()
 
 if __name__ == "__main__":
     main()

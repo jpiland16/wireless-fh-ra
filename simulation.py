@@ -19,7 +19,12 @@ class Simulation:
         self.params = parameters
         self.f = f
         self.y = y
-        self.state = initial_state
+        self.initial_state = initial_state
+
+        self.reset()
+
+    def reset(self):
+        self.state = self.initial_state
         self.total_tx_reward = 0
 
         self.reset_pn_sequence()
@@ -161,11 +166,15 @@ class Simulation:
     def run(self):
         """
         Play a game of the specified length and return the total 
-        transmitter reward.
+        transmitter reward. Resets the simulation to the original state
+        after run is complete.
         """
         game_time = 0
         while game_time < self.params.t:
             self.play_turn()
             game_time += 1
 
-        return self.total_tx_reward
+        reward = self.total_tx_reward
+        self.reset() 
+
+        return reward
