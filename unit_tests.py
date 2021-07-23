@@ -1,3 +1,4 @@
+from markov import QTable
 from simulation import Simulation
 from parameters import Parameters, validate_transmit_strategy, \
     validate_jammer_strategy, get_default_parameters
@@ -89,12 +90,22 @@ def test_multiple_simulation():
     plt.hist(tx_rewards, bins = 200)
     plt.show()
 
+def test_qtable_as_f():
+
+    params = get_default_parameters()
+    model = Model(params)
+
+    qtable = QTable(model.state_space, model.action_space)
+    validate_transmit_strategy(params, qtable, model.state_space, 
+        model.action_space)
+
 def main():
     # test_create_parameters()
     # test_validate_jammer_strategy()
     # test_validate_transmit_strategy()
     # test_run_simulation()
-    test_multiple_simulation()
+    # test_multiple_simulation()
+    test_qtable_as_f()
 
 if __name__ == "__main__":
     main()
