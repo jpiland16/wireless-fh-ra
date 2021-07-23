@@ -6,7 +6,8 @@ from model import Model
 
 class Simulation:
     def __init__(self, f: 'dict', y: 'list[float]', parameters: 
-            Parameters = get_default_parameters(), initial_state: str = "j"):
+            Parameters = get_default_parameters(), initial_state: str = "j",
+            debug: bool = False):
 
         self.model = Model(parameters)
 
@@ -14,6 +15,7 @@ class Simulation:
             self.model.action_space)
         validate_jammer_strategy(parameters, y)
 
+        self.debug = debug
         self.params = parameters
         self.f = f
         self.y = y
@@ -25,7 +27,6 @@ class Simulation:
 
         self.current_tx_channel = self.pn_sequence[0]
         self.current_tx_rate_index = len(self.params.rates) - 1
-        self.current_jammed_channels = self.jam_sequence[0]
 
         self.jam_single_channel = False
         
@@ -37,6 +38,7 @@ class Simulation:
     def reset_jam_sequence(self):
         self.current_jam_index = 0
         self.jam_sequence = self.get_sweep_sequence()
+        self.current_jammed_channels = self.jam_sequence[0]
 
     def get_next_pn_channel(self):
         self.current_pn_index += 1
@@ -58,14 +60,19 @@ class Simulation:
     def play_turn(self):
 
         # Send/receive a message
+        pn_index = self.current_pn_index
         channel = self.current_tx_channel
         rate_index = self.current_tx_rate_index
-        jammer_power_index = random.choices(self.params.p_jam, self.y)[0]
-        message_was_jammed = (channel in self.current_jammed_channels and 
-            jammer_power_index > self.params.m - rate_index) or (
-                self.jam_single_channel and 
+        jammer_power_index = random.choices([i for i in range(len(self.y))], 
+            self.y)[0]
+        jam_index = self.current_jam_index
+        jammed_channels = self.current_jammed_channels
+        single_jam = self.jam_single_channel
+
+        message_was_jammed = (channel in jammed_channels and 
+            jammer_power_index > self.params.m - rate_index) or (single_jam and 
                 self.params.get_single_channel_attack_sinr(jammer_power_index) 
-                < self.params.sinr_limits[rate_index]
+                <= self.params.sinr_limits[rate_index]
             )
 
         # Add reward (loss) for successful transmission (interception)
@@ -75,7 +82,7 @@ class Simulation:
             self.total_tx_reward += self.params.rates[rate_index]
 
         # Determine whether the jammer overheard an ACK or NACK
-        jammer_overheard_something = channel in self.current_jammed_channels
+        jammer_overheard_something = channel in jammed_channels
         jammer_overheard_ack = (jammer_overheard_something and 
             not message_was_jammed)
         jammer_overheard_nack = (jammer_overheard_something and 
@@ -88,7 +95,10 @@ class Simulation:
             else:
                 self.state = "1"
         else:
-            self.state = str(int(self.state) + 1)
+            if message_was_jammed:
+                self.state = "j"
+            else:
+                self.state = str(int(self.state) + 1)
         
         # Choose the next action
         action_p_dict = self.f[self.state]
@@ -100,6 +110,7 @@ class Simulation:
             pass
         else:
             # Hop to a new channel
+            self.state = "j"
             self.current_tx_channel = self.get_next_pn_channel()
             self.total_tx_reward -= self.params.c
 
@@ -108,6 +119,7 @@ class Simulation:
 
         if jammer_overheard_nack:
             self.reset_jam_sequence()
+            self.jam_single_channel = False
         elif jammer_overheard_ack:
             self.jam_single_channel = True
             self.current_jammed_channels = [channel]
@@ -115,6 +127,36 @@ class Simulation:
             self.current_jam_index += 1
             self.current_jammed_channels = \
                 self.jam_sequence[self.current_jam_index]
+
+        if self.debug:
+            info = (f"""### Game turn information ###""" +
+                    f"""\n - Transmitted on channel {channel} at rate """ + 
+                    f"""#{rate_index + 1} = {self.params.rates[rate_index]}""" +
+                    f""" Mbps"""
+                    f"""\n - Jammer was on {jammed_channels} """ +
+                    f"""and overheard {'ACK' if jammer_overheard_ack else (
+                            'NACK' if jammer_overheard_nack else "nothing"
+                    )}.""" +
+                    f"""\n - Message was jammed: {message_was_jammed}""" +
+                    f"""\n - Required JPI for non-single jam: {self.params.m
+                        - rate_index + 1}"""
+                    f"""\n - Single channel jam: {single_jam}""" + 
+                        ((f"""\n - Minimum SINR for transmission: {
+                        self.params.sinr_limits[rate_index]}""" + 
+                            f"""\n - SINR at receiver: {
+                                self.params.get_single_channel_attack_sinr(
+                                    jammer_power_index) 
+                            }""") if single_jam else "") +
+                    f"""\n - Current PN index: {pn_index}""" + 
+                    f"""\n - Current jam index: {jam_index}""" + 
+                    f"""\n - Action taken: {tx_action}"""
+                    f"""\n - Jammer power index: {jammer_power_index} """
+                    f"""\n - New state: {self.state}"""
+                    f"""\n\n"""
+            )
+
+            print(info)
+
 
     def run(self):
         """

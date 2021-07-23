@@ -17,8 +17,8 @@ def test_validate_jammer_strategy():
     validate_jammer_strategy(params, y)
 
 def create_demo_jammer_strategy(params: Parameters):
-    y = [1]
-    for _ in range(params.m):
+    y = [0, 1]
+    for _ in range(params.m - 1):
         y.append(0)
 
     return y
@@ -37,11 +37,17 @@ def create_demo_transmit_strategy(params: Parameters, model: Model):
     for state in model.state_space:
         f[state] = {}
         for action in model.action_space:
-            if action == f"s{params.m}":
-                f[state][action] = 1
+            if state != "j":
+                if action == f"s{params.m}":
+                    f[state][action] = 1
+                else:
+                    f[state][action] = 0
             else:
-                f[state][action] = 0
-                
+                if action == f"h{params.m}":
+                    f[state][action] = 1
+                else:
+                    f[state][action] = 0
+
     return f
 
 def test_run_simulation():
@@ -52,7 +58,7 @@ def test_run_simulation():
     f = create_demo_transmit_strategy(params, model)
     y = create_demo_jammer_strategy(params)
 
-    simulation = Simulation(f, y, params)
+    simulation = Simulation(f, y, params, debug=True)
     tx_reward = simulation.run()
 
     print(f"Transmitter reward: {tx_reward}")

@@ -13,7 +13,7 @@ class Model:
         
         states = ["j"]
         for i in range(math.ceil(self.params.k / self.params.n) ):
-            states.append(str(i))
+            states.append(str(i + 1))
             
         return states
         
