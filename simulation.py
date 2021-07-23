@@ -177,4 +177,4 @@ class Simulation:
         reward = self.total_tx_reward
         self.reset() 
 
-        return reward
+        return reward / self.params.t

@@ -79,13 +79,15 @@ def test_multiple_simulation():
 
     for _ in tqdm(range(2000)):
         tx_rewards.append(simulation.run())
+        
+    print(f"(Analyzing: average reward per unit time over entire simulation)\n"+
+          f"MEAN: {round(mean(tx_rewards), 4)}, " + 
+          f"MEDIAN: {round(median(tx_rewards), 4)}, " +
+          f"STDEV: {round(stdev(tx_rewards), 4)}"
+    )
     
     plt.hist(tx_rewards, bins = 200)
     plt.show()
-    print(f"Avg. reward: {mean(tx_rewards)}, " + 
-          f"Med. reward: {median(tx_rewards)}, " +
-          f"Std. dev: {stdev(tx_rewards)}"
-    )
 
 def main():
     # test_create_parameters()
