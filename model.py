@@ -73,14 +73,21 @@ class Model:
         
         # Equation 12   
         else:
-            x = int(state)
+            try:
+                # Messy. Need to check this later. TODO
+                x = int(state) 
+            except ValueError:
+                x = 0
+
             r = int(action[1:])
             sinr_single_attack = self.params.p_recv / ( self.params.alpha * 
                 self.params.n * self.params.p_jam[jammer_power_index]
                 + self.params.sigma_squared)
             
-            p_discover_next = self.params.n / (self.params.k - 
-                self.params.n * x)
+            # TODO the max thing below could also be wrong. Trying to avoid 
+            # errors to see what happens.
+            p_discover_next = self.params.n / max(1, (self.params.k - 
+                self.params.n * x))
             p_single_channel_attack = self.params.m * x / self.params.k
             
             probs["j"] = p_discover_next + p_single_channel_attack \
@@ -91,6 +98,8 @@ class Model:
                     else 0
                 )
             probs[str(x + 1)] = 1 - probs["j"]
+
+        return probs
 
     def get_immediate_transmitter_reward(self, state: str, action: str, 
             jammer_power_index: int):     

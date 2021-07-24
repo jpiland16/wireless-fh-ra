@@ -32,7 +32,13 @@ class QTable:
             key = lambda k: possible_actions[k])
         
         return {
-            a: best_action_probability if a == best_action 
-            else each_random_probability
+            a: best_action_probability + each_random_probability 
+            if a == best_action else each_random_probability
             for a in self.values[state]
         }
+
+    def __str__(self):
+        return str({state: self[state] for state in self.values})
+
+    def __iter__(self):
+        return iter(self.values)
