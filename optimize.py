@@ -9,7 +9,7 @@ from copy import deepcopy
 from threading import Thread
 
 DELTA = 0.9
-TIME_AHEAD = 0 # How many timesteps ahead to consider (before ending recursion)
+TIME_AHEAD = 1 # How many timesteps ahead to consider (before ending recursion)
 ROUND_PRECISION = 4 # Must be greater than or equal to 2 (see rounding in main)
 GENTLE_STOPPING = True
 
@@ -70,11 +70,9 @@ def best_transmitter_value(model: Model, state: str,
 
     if exponent > TIME_AHEAD:
         return 0
-    
-    print(("--" * exponent) + f" Calling V1({state}) @ depth {exponent}")
 
     return max(
-        np.dot(model.get_reward_matrix(state), y) 
+        np.dot(model.reward_matrices[state], y) 
 
          + (DELTA ** exponent) * np.dot(model.get_transition_matrix(state, 
              lambda new_state: best_transmitter_value(model, new_state,
@@ -94,10 +92,12 @@ def best_jammer_value(model: Model, state: str,
 
     return max(
         np.dot(action_probs, model.get_reward_matrix(state)) 
-         + (DELTA ** exponent) * np.dot(action_probs, model.get_transition_matrix(state, 
-             lambda new_state: best_jammer_value(model, new_state,
-                f, y, exponent + 1)
-        ))
+         + (DELTA ** exponent) * np.dot(action_probs, 
+            model.get_transition_matrix(state, 
+                lambda new_state: best_jammer_value(model, new_state,
+                    f, y, exponent + 1)
+            )
+        )
     )
 
 def objective_function(x, model):

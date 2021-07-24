@@ -9,6 +9,39 @@ class Model:
         self.state_space = self.get_state_space()
         self.action_space = self.get_action_space()
 
+        # Do calculations now to avoid repetition
+        self.transition_probabilities = {
+            state: {
+                action: [
+                    self.get_transition_probabilities(state, action, pj) \
+                    for pj in range(self.params.m + 1)
+                ] for action in self.action_space
+            } for state in self.state_space
+        }
+
+        self.transmitter_payoffs = {
+            action: [
+                {
+                    new_state: self.get_immediate_transmitter_payoff(action, 
+                        pj, new_state)
+                    for new_state in self.state_space
+                } for pj in range(self.params.m + 1)
+            ] for action in self.action_space
+        }
+
+        self.transmitter_rewards = {
+            state: {
+                action: [
+                    self.get_immediate_transmitter_reward(state, action, pj) \
+                    for pj in range(self.params.m + 1)
+                ] for action in self.action_space
+            } for state in self.state_space
+        }
+
+        self.reward_matrices = {
+            state: self.get_reward_matrix(state) for state in self.state_space
+        }
+
     def get_state_space(self):
         
         states = ["j"]
@@ -107,12 +140,12 @@ class Model:
         Listed as r(x, a1, a2) in the paper.
         """ 
         
-        transition_probabilities = self.get_transition_probabilities(
-            state, action, jammer_power_index)
+        transition_probabilities = (
+            self.transition_probabilities[state][action][jammer_power_index])
 
         # Equation 13
-        return sum([self.get_immediate_transmitter_payoff(action, 
-            jammer_power_index, x_prime) * transition_probabilities[x_prime] 
+        return sum([self.transmitter_payoffs[action][jammer_power_index] \
+                [x_prime] * transition_probabilities[x_prime] 
             for x_prime in self.state_space])
 
     def get_reward_matrix(self, state: str):
@@ -120,9 +153,8 @@ class Model:
         Listed as R(x) in the paper.
         """
         return np.array([
-                [self.get_immediate_transmitter_reward(state, action, 
-                jammer_power_index) for jammer_power_index 
-                in range(0, self.params.m + 1)] 
+                [self.transmitter_rewards[state][action][jammer_power_index] \
+                    for jammer_power_index in range(0, self.params.m + 1)] 
             for action in self.action_space])
 
     def get_transition_matrix(self, state: str, value_function: callable):
@@ -131,14 +163,16 @@ class Model:
         """
 
         matrix = []
+        next_state_values = {x_prime: value_function(x_prime) for x_prime 
+            in self.state_space}
 
         for action in self.action_space:
             matrix.append([])
             for jammer_power_index in range(0, self.params.m + 1):
-                transition_probabilities = self.get_transition_probabilities(
-                    state, action, jammer_power_index)
+                transition_probabilities = (self.transition_probabilities \
+                    [state][action][jammer_power_index])
                 matrix[-1].append(sum([transition_probabilities[x_prime] 
-                    * value_function(x_prime) 
+                    * next_state_values[x_prime] 
                     for x_prime in self.state_space]))
 
         return np.array(matrix)
