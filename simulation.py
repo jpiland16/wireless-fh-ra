@@ -159,6 +159,7 @@ class Simulation:
             )
 
             print(info)
+            input()
 
 
     def run(self):
