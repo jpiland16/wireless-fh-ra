@@ -6,7 +6,7 @@ from scipy.optimize import minimize, LinearConstraint
 import numpy as np
 
 DELTA = 0.9
-CUTOFF = 0.001
+CUTOFF = 0.9
 
 def convert_strategies_to_list(f: dict, y: 'list[float]'):
     vector = []
@@ -98,10 +98,14 @@ def create_constraints(model: Model, vec_size: int):
     coeffs = [1 if i >= vector_offset else 0 for i in range(vec_size)]
     constraints.append(LinearConstraint(coeffs, 1, 1))
 
+    return constraints
+
 def create_bounds(vec_size: int):
     bounds = []
     for _ in range(vec_size):
         bounds.append((0, 1))
+        
+    return bounds
 
 def create_random_strategies(params: Parameters, model: Model):
     q_table = QTable(model.state_space, model.action_space)
