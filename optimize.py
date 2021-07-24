@@ -1,7 +1,7 @@
 import time
 from markov import QTable
 from model import Model, validate_jammer_strategy, validate_transmit_strategy
-from parameters import Parameters, get_default_parameters
+from parameters import get_default_parameters
 
 from scipy.optimize import minimize, LinearConstraint
 import numpy as np
@@ -9,8 +9,9 @@ from copy import deepcopy
 from threading import Thread
 
 DELTA = 0.9
-CUTOFF = 0.9
+TIME_AHEAD = 0 # How many timesteps ahead to consider (before ending recursion)
 ROUND_PRECISION = 4 # Must be greater than or equal to 2 (see rounding in main)
+GENTLE_STOPPING = True
 
 stop_optimization = False
 optimization_not_complete = True
@@ -62,39 +63,40 @@ def convert_list_to_strategies(model: Model, vector: 'list'):
     return f, y
 
 def best_transmitter_value(model: Model, state: str,
-        f: dict, y: 'list[float]', fraction: float = DELTA):
+        f: dict, y: 'list[float]', exponent: int = 0):
     """
     Labeled as V_1 in Equation 22 of the paper.
     """
-    params = model.params
 
-    if fraction < CUTOFF:
+    if exponent > TIME_AHEAD:
         return 0
+    
+    print(("--" * exponent) + f" Calling V1({state}) @ depth {exponent}")
 
     return max(
         np.dot(model.get_reward_matrix(state), y) 
 
-         + fraction * np.dot(model.get_transition_matrix(state, 
+         + (DELTA ** exponent) * np.dot(model.get_transition_matrix(state, 
              lambda new_state: best_transmitter_value(model, new_state,
-                f, y, fraction * DELTA)
+                f, y, exponent + 1)
         ), y)
     )
 
 def best_jammer_value(model: Model, state: str,
-        f: dict, y: 'list[float]', fraction: float = DELTA):
+        f: dict, y: 'list[float]', exponent: int = 0):
     """
     Labeled as V_2 in Equation 22 of the paper.
     """
-    if fraction < CUTOFF:
+    if exponent > TIME_AHEAD:
         return 0
 
     action_probs = [-f[state][action] for action in f[state]]
 
     return max(
         np.dot(action_probs, model.get_reward_matrix(state)) 
-         + fraction * np.dot(action_probs, model.get_transition_matrix(state, 
+         + (DELTA ** exponent) * np.dot(action_probs, model.get_transition_matrix(state, 
              lambda new_state: best_jammer_value(model, new_state,
-                f, y, fraction * DELTA)
+                f, y, exponent + 1)
         ))
     )
 
@@ -207,19 +209,22 @@ def run_optimization():
 
 if __name__ == "__main__":
 
-    start_time = time.time()
+    if GENTLE_STOPPING:
+        start_time = time.time()
 
-    run = Thread(target=run_optimization)
-    run.start()
+        run = Thread(target=run_optimization)
+        run.start()
 
-    try:
-        while optimization_not_complete:
-            time.sleep(1)
-            pass
-    except KeyboardInterrupt:
-        stop_optimization = True
-        print("Optimization terminated early using KeyboardInterrupt")
+        try:
+            while optimization_not_complete:
+                time.sleep(1)
+                pass
+        except KeyboardInterrupt:
+            stop_optimization = True
+            print("Optimization terminated early using KeyboardInterrupt")
 
-    run.join()
+        run.join()
 
-    print(f"Elapsed time: {round(time.time() - start_time, 2)} seconds\n")
+        print(f"Elapsed time: {round(time.time() - start_time, 2)} seconds\n")
+    else:
+        run_optimization()
