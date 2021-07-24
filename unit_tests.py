@@ -1,9 +1,9 @@
 from markov import QTable
 from simulation import Simulation
-from parameters import Parameters, validate_transmit_strategy, \
-    validate_jammer_strategy, get_default_parameters
+from parameters import Parameters, get_default_parameters
 from optimize import convert_strategies_to_list, convert_list_to_strategies
-from model import Model
+from model import Model, validate_transmit_strategy, validate_jammer_strategy
+
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from statistics import stdev, median, mean
@@ -18,10 +18,13 @@ def test_create_parameters():
 def test_validate_jammer_strategy():
     
     params = get_default_parameters()
-    y = create_demo_jammer_strategy(params)
-    validate_jammer_strategy(params, y)
+    model = Model(params)
+    y = create_demo_jammer_strategy(model)
+    validate_jammer_strategy(model, y)
 
-def create_demo_jammer_strategy(params: Parameters):
+def create_demo_jammer_strategy(model: Model):
+    params = model.params
+
     y = [0, 1]
     for _ in range(params.m - 1):
         y.append(0)
@@ -32,11 +35,12 @@ def test_validate_transmit_strategy():
 
     params = get_default_parameters()
     model = Model(params)
-    f = create_demo_transmit_strategy(params, model)
-    validate_transmit_strategy(params, f, model.state_space, 
-        model.action_space)
+    f = create_demo_transmit_strategy(model)
+    validate_transmit_strategy(model, f)
 
-def create_demo_transmit_strategy(params: Parameters, model: Model):
+def create_demo_transmit_strategy(model: Model):
+    params = model.params
+
     f = {}
 
     for state in model.state_space:
@@ -60,10 +64,10 @@ def test_run_simulation():
     params = get_default_parameters()
     model = Model(params)
 
-    f = create_demo_transmit_strategy(params, model)
-    y = create_demo_jammer_strategy(params)
+    f = create_demo_transmit_strategy(model)
+    y = create_demo_jammer_strategy(model)
 
-    simulation = Simulation(f, y, params)
+    simulation = Simulation(f, y, model)
     tx_reward = simulation.run()
 
     print(f"Transmitter reward: {tx_reward}")
@@ -73,10 +77,10 @@ def test_multiple_simulation():
     params = get_default_parameters()
     model = Model(params)
 
-    f = create_demo_transmit_strategy(params, model)
-    y = create_demo_jammer_strategy(params)
+    f = create_demo_transmit_strategy(model)
+    y = create_demo_jammer_strategy(model)
 
-    simulation = Simulation(f, y, params)
+    simulation = Simulation(f, y, model)
     tx_rewards = []
 
     for _ in tqdm(range(2000)):
@@ -97,8 +101,7 @@ def test_qtable_as_f():
     model = Model(params)
 
     qtable = QTable(model.state_space, model.action_space)
-    validate_transmit_strategy(params, qtable, model.state_space, 
-        model.action_space)
+    validate_transmit_strategy(model, qtable)
 
 def test_convert_parameters():
 
@@ -113,10 +116,10 @@ def test_convert_strategies():
     params =  get_default_parameters()
     model = Model(params)
 
-    f = create_demo_transmit_strategy(params, model)
-    y = create_demo_jammer_strategy(params)
+    f = create_demo_transmit_strategy(model)
+    y = create_demo_jammer_strategy(model)
 
-    fp, yp = convert_list_to_strategies(params, 
+    fp, yp = convert_list_to_strategies(model, 
         convert_strategies_to_list(f, y))
 
     def compare(a, b, name):
@@ -131,13 +134,13 @@ def test_convert_strategies():
     compare(y, yp, "y")
 
 def main():
-    # test_create_parameters()
-    # test_validate_jammer_strategy()
-    # test_validate_transmit_strategy()
-    # test_run_simulation()
-    # test_multiple_simulation()
-    # test_qtable_as_f()
-    # test_convert_parameters()
+    test_create_parameters()
+    test_validate_jammer_strategy()
+    test_validate_transmit_strategy()
+    test_run_simulation()
+    test_multiple_simulation()
+    test_qtable_as_f()
+    test_convert_parameters()
     test_convert_strategies()
 
 if __name__ == "__main__":

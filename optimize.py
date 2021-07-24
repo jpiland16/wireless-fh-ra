@@ -1,7 +1,6 @@
 from markov import QTable
-from model import Model
-from parameters import Parameters, get_default_parameters, \
-    validate_jammer_strategy, validate_transmit_strategy
+from model import Model, validate_jammer_strategy, validate_transmit_strategy
+from parameters import Parameters, get_default_parameters
 
 from scipy.optimize import minimize, LinearConstraint
 import numpy as np
@@ -17,8 +16,8 @@ class OptimizationProgress():
 
     def __call__(self, x0):
         self.iterations += 1
-        print(f"Optimizing... iteration #{self.iterations} " + 
-            f"(xk = {str(x0)[:10]}...)  \r", end="")
+        print(f"Iteration #{self.iterations} " + 
+            f"(xk = {str(x0)[:15]}...)  \r", end="")
 
 def convert_strategies_to_list(f: dict, y: 'list[float]'):
     vector = []
@@ -30,10 +29,10 @@ def convert_strategies_to_list(f: dict, y: 'list[float]'):
     
     return vector
 
-def convert_list_to_strategies(params: Parameters, vector: 'list'):
+def convert_list_to_strategies(model: Model, vector: 'list'):
     f = {}
     y = []
-    model = Model(params)
+    params = model.params
     i = 0
 
     for state in model.state_space:
@@ -48,11 +47,13 @@ def convert_list_to_strategies(params: Parameters, vector: 'list'):
 
     return f, y
 
-def best_transmitter_value(params: Parameters, model: Model, state: str,
+def best_transmitter_value(model: Model, state: str,
         f: dict, y: 'list[float]', fraction: float = DELTA):
     """
     Labeled as V_1 in Equation 22 of the paper.
     """
+    params = model.params
+
     if fraction < CUTOFF:
         return 0
 
@@ -60,12 +61,12 @@ def best_transmitter_value(params: Parameters, model: Model, state: str,
         np.dot(model.get_reward_matrix(state), y) 
 
          + fraction * np.dot(model.get_transition_matrix(state, 
-             lambda new_state: best_transmitter_value(params, model, new_state,
+             lambda new_state: best_transmitter_value(model, new_state,
                 f, y, fraction * DELTA)
         ), y)
     )
 
-def best_jammer_value(params: Parameters, model: Model, state: str,
+def best_jammer_value(model: Model, state: str,
         f: dict, y: 'list[float]', fraction: float = DELTA):
     """
     Labeled as V_2 in Equation 22 of the paper.
@@ -78,18 +79,16 @@ def best_jammer_value(params: Parameters, model: Model, state: str,
     return max(
         np.dot(action_probs, model.get_reward_matrix(state)) 
          + fraction * np.dot(action_probs, model.get_transition_matrix(state, 
-             lambda new_state: best_jammer_value(params, model, new_state,
+             lambda new_state: best_jammer_value(model, new_state,
                 f, y, fraction * DELTA)
         ))
     )
 
-def objective_function(x, *params_tuple):
-    params = Parameters.get_from_tuple(params_tuple)
-    f, y = convert_list_to_strategies(params, x)
-    model = Model(params)
+def objective_function(x, model):
+    f, y = convert_list_to_strategies(model, x)
 
-    v1 = lambda x: best_transmitter_value(params, model, x, f, y)
-    v2 = lambda x: best_jammer_value(params, model, x, f, y)
+    v1 = lambda x: best_transmitter_value(model, x, f, y)
+    v2 = lambda x: best_jammer_value(model, x, f, y)
 
     return sum([v1(state) + v2(state) for state in model.state_space])
 
@@ -125,18 +124,17 @@ def create_bounds(vec_size: int):
 
     return bounds
 
-def create_random_strategies(params: Parameters, model: Model):
+def create_random_strategies(model: Model):
+    params = model.params
     q_table = QTable(model.state_space, model.action_space)
     q_table.epsilon = 1 # Used to create completely random strategy
     rate_count = params.m + 1
     y = [1 / rate_count for _ in range(rate_count)]
     return q_table, y 
 
-def find_equilibrium(params: Parameters, model: Model):
+def find_equilibrium(model: Model):
     
-    params_tuple = params.convert_to_tuple()
-    
-    f, y = create_random_strategies(params, model)
+    f, y = create_random_strategies(model)
     x0 = convert_strategies_to_list(f, y)
 
     constraints = create_constraints(model, len(x0))
@@ -144,8 +142,10 @@ def find_equilibrium(params: Parameters, model: Model):
 
     progress = OptimizationProgress()
 
-    return minimize(objective_function, x0, args=params_tuple, 
-        bounds=bounds, constraints=constraints, callback=progress)
+    fun = lambda x: objective_function(x, model)
+
+    return minimize(fun, x0, bounds=bounds, constraints=constraints, 
+        callback=progress)
 
 def round_strategies(f: dict, y: 'list[float]', decimal_places: int):
     """
@@ -165,14 +165,17 @@ def round_strategies(f: dict, y: 'list[float]', decimal_places: int):
     return f, y
 
 def main():
-    print()
+
+    print("\nOptimizing the game...")
+
     params = get_default_parameters()
     model = Model(params)
-    eq = find_equilibrium(params, model)
+    eq = find_equilibrium(model)
+
     print("\n")
     print(eq)    
 
-    f, y = convert_list_to_strategies(params, eq.x)
+    f, y = convert_list_to_strategies(model, eq.x)
     f, y = round_strategies(f, y, decimal_places = ROUND_PRECISION)
 
     print("\n\nTRANSMITTER STRATEGY: ")
@@ -181,9 +184,8 @@ def main():
     print(y)
     print("\n")
 
-    validate_transmit_strategy(params, f, model.state_space, 
-        model.action_space, precision = ROUND_PRECISION - 2)
-    validate_jammer_strategy(params, y, precision = ROUND_PRECISION - 2)
+    validate_transmit_strategy(model, f, precision = ROUND_PRECISION - 2)
+    validate_jammer_strategy(model, y, precision = ROUND_PRECISION - 2)
 
 if __name__ == "__main__":
     main()

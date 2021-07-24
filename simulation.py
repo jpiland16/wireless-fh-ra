@@ -1,22 +1,20 @@
 import random, math
 
-from parameters import Parameters, validate_jammer_strategy, \
-    validate_transmit_strategy, get_default_parameters
-from model import Model
+from parameters import Parameters, get_default_parameters
+from model import Model, validate_jammer_strategy, validate_transmit_strategy
 
 class Simulation:
-    def __init__(self, f: dict, y: 'list[float]', parameters: 
-            Parameters = get_default_parameters(), initial_state: str = "j",
-            debug: bool = False):
+    def __init__(self, f: dict, y: 'list[float]', model: Model, 
+            initial_state: str = "j", debug: bool = False):
 
-        self.model = Model(parameters)
+        self.model = model
+        params = model.params
 
-        validate_transmit_strategy(parameters, f, self.model.state_space, 
-            self.model.action_space)
-        validate_jammer_strategy(parameters, y)
+        validate_transmit_strategy(model, f)
+        validate_jammer_strategy(model, y)
 
         self.debug = debug
-        self.params = parameters
+        self.params = params
         self.f = f
         self.y = y
         self.initial_state = initial_state
