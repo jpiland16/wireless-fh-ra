@@ -100,7 +100,9 @@ class Simulation:
         else:
             if message_was_jammed:
                 self.state = "j"
-            else:
+            elif self.state != self.model.state_space[-1]:
+                # Only increase the success count if we have another state 
+                # available! (Accounts for low jammer power)
                 self.state = str(int(self.state) + 1)
         
         # Choose the next action
@@ -128,6 +130,8 @@ class Simulation:
             self.current_jammed_channels = [channel]
         else:
             self.current_jam_index += 1
+            if self.current_jam_index >= len(self.jam_sequence):
+                self.current_jam_index = 0
             self.current_jammed_channels = \
                 self.jam_sequence[self.current_jam_index]
 

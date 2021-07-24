@@ -238,6 +238,7 @@ def round_strategies(f: dict, y: 'list[float]', decimal_places: int):
     return f, y
 
 def run_optimization():
+    global model, f, y
 
     start_time = time.time()
 
@@ -261,9 +262,6 @@ def run_optimization():
 
     print(f"Elapsed time: {round(time.time() - start_time, 2)} seconds\n")
 
-    if confirm("Run a simulation with these strategies?"):
-        simulate(model, f, y, precision = ROUND_PRECISION - 2)
-
 if __name__ == "__main__":
 
     if GENTLE_STOPPING:
@@ -277,9 +275,12 @@ if __name__ == "__main__":
                 pass
         except KeyboardInterrupt:
             stop_optimization = True
-            print("\nEnded process using KeyboardInterrupt")
+            print("\Optimization terminated early using KeyboardInterrupt")
 
         run.join()
+
+        if confirm("Run simulations with these strategies?"):
+            simulate(model, f, y, precision = ROUND_PRECISION - 2)
 
     else:
         run_optimization()

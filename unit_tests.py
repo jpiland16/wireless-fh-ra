@@ -142,7 +142,7 @@ def test_random_strategies():
     qtable.epsilon = 1
     y = [1 / (params.m + 1) for _ in range(params.m + 1)]
 
-    sim = Simulation(qtable, y, model, debug=True)
+    sim = Simulation(qtable, y, model)
     print(sim.run())
 
 def main():

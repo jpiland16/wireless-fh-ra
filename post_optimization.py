@@ -9,7 +9,7 @@ def simulate(model: Model, f: dict, y: 'list[float]', precision: int = -1):
     simulation = Simulation(f, y, model, precision = precision)
     tx_rewards = []
 
-    for _ in tqdm(range(2000)):
+    for _ in tqdm(range(1000)):
         tx_rewards.append(simulation.run())
         
     print(f"(Analyzing: average reward per unit time over entire simulation)\n"+
