@@ -191,7 +191,7 @@ def create_bounds(vec_size: int):
 
 def create_random_strategies(model: Model):
     params = model.params
-    q_table = QTable(model.state_space, model.action_space)
+    q_table = QTable(model)
     q_table.epsilon = 1 # Used to create completely random strategy
     rate_count = params.m + 1
     y = [1 / rate_count for _ in range(rate_count)]

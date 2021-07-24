@@ -100,7 +100,7 @@ def test_qtable_as_f():
     params = get_default_parameters()
     model = Model(params)
 
-    qtable = QTable(model.state_space, model.action_space)
+    qtable = QTable(model)
     validate_transmit_strategy(model, qtable)
 
 def test_convert_parameters():
@@ -133,15 +133,28 @@ def test_convert_strategies():
     compare(f, fp, "f")
     compare(y, yp, "y")
 
+def test_random_strategies():
+
+    params = get_default_parameters()
+    model = Model(params)
+
+    qtable = QTable(model)
+    qtable.epsilon = 1
+    y = [1 / (params.m + 1) for _ in range(params.m + 1)]
+
+    sim = Simulation(qtable, y, model)
+    print(sim.run())
+
 def main():
-    test_create_parameters()
-    test_validate_jammer_strategy()
-    test_validate_transmit_strategy()
-    test_run_simulation()
-    test_multiple_simulation()
-    test_qtable_as_f()
-    test_convert_parameters()
-    test_convert_strategies()
+    # test_create_parameters()
+    # test_validate_jammer_strategy()
+    # test_validate_transmit_strategy()
+    # test_run_simulation()
+    # test_multiple_simulation()
+    # test_qtable_as_f()
+    # test_convert_parameters()
+    # test_convert_strategies()
+    test_random_strategies()
 
 if __name__ == "__main__":
     main()

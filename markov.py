@@ -1,7 +1,10 @@
+from model import Model
 import random
 
 class QTable:
-    def __init__(self, states: 'list[str]', actions: 'list[str]'):
+    def __init__(self, model: Model):
+        actions = model.action_space
+        states = model.state_space
         self.values = { s: {a: 0 for a in actions} for s in states}
         self.epsilon = 0
         
