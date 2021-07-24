@@ -1,12 +1,15 @@
 from markov import QTable
 from model import Model
-from parameters import Parameters, get_default_parameters, validate_jammer_strategy, validate_transmit_strategy
+from parameters import Parameters, get_default_parameters, \
+    validate_jammer_strategy, validate_transmit_strategy
 
 from scipy.optimize import minimize, LinearConstraint
 import numpy as np
+from copy import deepcopy
 
 DELTA = 0.9
 CUTOFF = 0.9
+ROUND_PRECISION = 4 # Must be greater than or equal to 2 (see rounding in main)
 
 class OptimizationProgress():
     def __init__(self):
@@ -111,7 +114,7 @@ def create_constraints(model: Model, vec_size: int):
     coeffs = [0 for _ in range(vector_offset)]
     for p in model.params.p_jam:
         coeffs.append(p)
-    constraints.append(LinearConstraint(coeffs, 0, 1))
+    constraints.append(LinearConstraint(coeffs, 0, model.params.p_avg))
 
     return constraints
 
@@ -129,10 +132,9 @@ def create_random_strategies(params: Parameters, model: Model):
     y = [1 / rate_count for _ in range(rate_count)]
     return q_table, y 
 
-def find_equilibrium(params: Parameters):
+def find_equilibrium(params: Parameters, model: Model):
     
     params_tuple = params.convert_to_tuple()
-    model = Model(params)
     
     f, y = create_random_strategies(params, model)
     x0 = convert_strategies_to_list(f, y)
@@ -145,25 +147,43 @@ def find_equilibrium(params: Parameters):
     return minimize(objective_function, x0, args=params_tuple, 
         bounds=bounds, constraints=constraints, callback=progress)
 
-def optim_callback():
-    pass
+def round_strategies(f: dict, y: 'list[float]', decimal_places: int):
+    """
+    Rounds the strategies to the specified precision and returns the new 
+    strategies. Uses deepcopy to avoid affecting the objects referenced
+    by the input parameters.
+    """
+    f = deepcopy(f)
+    y = deepcopy(y)
+
+    for state in f:
+        for action in f[state]:
+            f[state][action] = round(f[state][action], decimal_places)
+    for i in range(len(y)):
+        y[i] = round(y[i], decimal_places)
+
+    return f, y
 
 def main():
+    print()
     params = get_default_parameters()
     model = Model(params)
-    eq = find_equilibrium(params)
-    print()
+    eq = find_equilibrium(params, model)
+    print("\n")
     print(eq)    
 
     f, y = convert_list_to_strategies(params, eq.x)
+    f, y = round_strategies(f, y, decimal_places = ROUND_PRECISION)
+
     print("\n\nTRANSMITTER STRATEGY: ")
     print(f)
     print("\n\nJAMMER STRATEGY: ")
     print(y)
     print("\n")
 
-    validate_transmit_strategy(params, f, model.state_space, model.action_space)
-    validate_jammer_strategy(params, y)
+    validate_transmit_strategy(params, f, model.state_space, 
+        model.action_space, precision = ROUND_PRECISION - 2)
+    validate_jammer_strategy(params, y, precision = ROUND_PRECISION - 2)
 
 if __name__ == "__main__":
     main()

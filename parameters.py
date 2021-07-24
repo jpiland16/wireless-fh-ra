@@ -135,8 +135,13 @@ class Parameters:
 
 
 def validate_transmit_strategy(parameters: Parameters, f: dict,
-        state_space: 'list[str]', action_space: 'list[str]'):
-    
+        state_space: 'list[str]', action_space: 'list[str]', 
+        precision: int = -1):
+    """
+    Ensures that the strategy of the transmitter is valid, and throws a 
+    ValueError otherwise. If precision is a non-negative integer, then
+    sums are first rounded to that precision before beuing evaluated.
+    """
     validate_param("state space", "size", math.ceil(parameters.k 
         / parameters.n) + 1, len(state_space))
     
@@ -153,15 +158,21 @@ def validate_transmit_strategy(parameters: Parameters, f: dict,
             transmit_validate(f"0 <= f[{state}][{action}] <= 1", 
                 True, 0 <= p and p <= 1)
             action_p_sum += p
-        transmit_validate(f"sum of f[\"{state}\"]", 1, action_p_sum)
+        transmit_validate(f"sum of f[\"{state}\"]", 1, action_p_sum if 
+            precision < 0 else round(action_p_sum, precision))
         transmit_validate(f"number of actions in f[\"{state}\"]", 
             len(action_space), len(f[state]))
 
     transmit_validate("number of states in f", len(state_space), len(f))
 
 
-def validate_jammer_strategy(parameters: Parameters, y: 'list[float]'):
-
+def validate_jammer_strategy(parameters: Parameters, y: 'list[float]', 
+        precision: int = -1):
+    """
+    Ensures that the strategy of the jammer is valid, and throws a 
+    ValueError otherwise. If precision is a non-negative integer, then
+    sums are first rounded to that precision before beuing evaluated.
+    """
     def jammer_validate(p_name: str, expected, actual):
         validate_param("jammer strategy", p_name, expected, actual)    
 
@@ -170,9 +181,13 @@ def validate_jammer_strategy(parameters: Parameters, y: 'list[float]'):
     for i, yi in enumerate(y):
         jammer_validate(f"0 <= y[{i}] <= 1", True, 0 <= yi and yi <= 1)
 
-    jammer_validate("sum of elements", 1, sum(y))
-    jammer_validate("power constraint satisfied", True, np.dot(
-        parameters.p_jam, y) <= parameters.p_avg)
+    jammer_validate("sum of elements", 1, sum(y) if precision < 0 else 
+        round(sum(y), precision))
+
+    avg_power = np.dot(parameters.p_jam, y)
+
+    jammer_validate("power constraint satisfied", True, (avg_power
+        if precision < 0 else round(avg_power, precision)) <= parameters.p_avg)
 
 def get_default_parameters():    
     p_max = 2
