@@ -9,7 +9,7 @@ from copy import deepcopy
 from threading import Thread
 
 DELTA = 0.9
-TIME_AHEAD = 1 # How many timesteps ahead to consider (before ending recursion)
+TIME_AHEAD = 10 # How many timesteps ahead to consider (before ending recursion)
 ROUND_PRECISION = 4 # Must be greater than or equal to 2 (see rounding in main)
 GENTLE_STOPPING = True
 
@@ -33,6 +33,52 @@ class StoppableFunction():
             raise StopIteration
         self.last_input = x
         return self.function(x)
+
+class MemoryFunctions():
+    """
+    Provides major performance improvements for the recursive functions
+    as used in this game by remembering the output of V1(x) and V2(x) at 
+    each depth. 
+
+    Example:
+        V1(j) --> new calculation
+          V1(j) --> new calculation
+          V1(1) --> new calculation
+          .
+          .
+          .
+        V1(1) --> new calculation
+          V1(j) --> remembered
+          V1(1) --> remembered
+        
+    I'm not completely sure, but I think this changes the objective function's
+    time complexity from exponential to linear.
+    """
+
+    def __init__(self, model: Model):
+        self.model = model
+        self.function_count = 2
+
+    def reset(self, f: dict, y: 'list[float]'):
+        self.f = f
+        self.y = y
+        self.history = []
+        for _ in range(2):
+            self.history.append({x: {} for x in self.model.state_space})
+
+    def get(self, funcId: int, x: str, depth: int = 0):
+        try:
+            return self.history[funcId][x][str(depth)]
+        except KeyError:
+            pass
+        
+        # We haven't done this calculation yet
+        res = (best_transmitter_value(self, x, self.y, depth) 
+            if funcId == 0 
+            else best_jammer_value(self, x, self.f, depth))
+        
+        self.history[funcId][x][str(depth)] = res
+        return res
 
 def convert_strategies_to_list(f: dict, y: 'list[float]'):
     vector = []
@@ -62,11 +108,12 @@ def convert_list_to_strategies(model: Model, vector: 'list'):
 
     return f, y
 
-def best_transmitter_value(model: Model, state: str,
-        f: dict, y: 'list[float]', exponent: int = 0):
+def best_transmitter_value(memfunc: MemoryFunctions, state: str,
+        y: 'list[float]', exponent: int = 0):
     """
     Labeled as V_1 in Equation 22 of the paper.
     """
+    model = memfunc.model
 
     if exponent > TIME_AHEAD:
         return 0
@@ -75,38 +122,39 @@ def best_transmitter_value(model: Model, state: str,
         np.dot(model.reward_matrices[state], y) 
 
          + (DELTA ** exponent) * np.dot(model.get_transition_matrix(state, 
-             lambda new_state: best_transmitter_value(model, new_state,
-                f, y, exponent + 1)
+             lambda new_state: memfunc.get(0, new_state, exponent + 1)
         ), y)
     )
 
-def best_jammer_value(model: Model, state: str,
-        f: dict, y: 'list[float]', exponent: int = 0):
+def best_jammer_value(memfunc: MemoryFunctions, state: str,
+        f: dict, exponent: int = 0):
     """
     Labeled as V_2 in Equation 22 of the paper.
     """
+    model = memfunc.model
+
     if exponent > TIME_AHEAD:
         return 0
 
     action_probs = [-f[state][action] for action in f[state]]
 
     return max(
-        np.dot(action_probs, model.get_reward_matrix(state)) 
+        np.dot(action_probs, model.reward_matrices[state]) 
          + (DELTA ** exponent) * np.dot(action_probs, 
             model.get_transition_matrix(state, 
-                lambda new_state: best_jammer_value(model, new_state,
-                    f, y, exponent + 1)
+                lambda new_state: memfunc.get(1, new_state, exponent + 1)
             )
         )
     )
 
-def objective_function(x, model):
+def objective_function(x, memfunc: MemoryFunctions):
+    model = memfunc.model
     f, y = convert_list_to_strategies(model, x)
 
-    v1 = lambda x: best_transmitter_value(model, x, f, y)
-    v2 = lambda x: best_jammer_value(model, x, f, y)
+    memfunc.reset(f, y)
 
-    return sum([v1(state) + v2(state) for state in model.state_space])
+    return sum([memfunc.get(0, state) + memfunc.get(1, state) 
+        for state in model.state_space])
 
 def create_constraints(model: Model, vec_size: int):
     constraints = []
@@ -159,7 +207,8 @@ def find_equilibrium(model: Model):
 
     progress = OptimizationProgress()
 
-    fun = StoppableFunction(lambda x: objective_function(x, model))
+    memfunc = MemoryFunctions(model)
+    fun = StoppableFunction(lambda x: objective_function(x, memfunc))
 
     try:
         result = minimize(fun, x0, bounds=bounds, constraints=constraints, 
