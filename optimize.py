@@ -1,3 +1,4 @@
+import time
 from markov import QTable
 from model import Model, validate_jammer_strategy, validate_transmit_strategy
 from parameters import Parameters, get_default_parameters
@@ -5,10 +6,14 @@ from parameters import Parameters, get_default_parameters
 from scipy.optimize import minimize, LinearConstraint
 import numpy as np
 from copy import deepcopy
+from threading import Thread
 
 DELTA = 0.9
 CUTOFF = 0.9
 ROUND_PRECISION = 4 # Must be greater than or equal to 2 (see rounding in main)
+
+stop_optimization = False
+optimization_not_complete = True
 
 class OptimizationProgress():
     def __init__(self):
@@ -18,6 +23,15 @@ class OptimizationProgress():
         self.iterations += 1
         print(f"Iteration #{self.iterations} " + 
             f"(xk = {str(x0)[:15]}...)  \r", end="")
+
+class StoppableFunction():
+    def __init__(self, fun):
+        self.function = fun
+    def __call__(self, x):
+        if stop_optimization:
+            raise StopIteration
+        self.last_input = x
+        return self.function(x)
 
 def convert_strategies_to_list(f: dict, y: 'list[float]'):
     vector = []
@@ -133,6 +147,7 @@ def create_random_strategies(model: Model):
     return q_table, y 
 
 def find_equilibrium(model: Model):
+    global optimization_not_complete
     
     f, y = create_random_strategies(model)
     x0 = convert_strategies_to_list(f, y)
@@ -142,10 +157,16 @@ def find_equilibrium(model: Model):
 
     progress = OptimizationProgress()
 
-    fun = lambda x: objective_function(x, model)
+    fun = StoppableFunction(lambda x: objective_function(x, model))
 
-    return minimize(fun, x0, bounds=bounds, constraints=constraints, 
-        callback=progress)
+    try:
+        result = minimize(fun, x0, bounds=bounds, constraints=constraints, 
+            callback=progress).x
+    except StopIteration:
+        result = fun.last_input
+    
+    optimization_not_complete = False
+    return result
 
 def round_strategies(f: dict, y: 'list[float]', decimal_places: int):
     """
@@ -164,28 +185,41 @@ def round_strategies(f: dict, y: 'list[float]', decimal_places: int):
 
     return f, y
 
-def main():
+def run_optimization():
 
-    print("\nOptimizing the game...")
+    print("\nOptimizing the game... (CTRL-C to stop)")
 
     params = get_default_parameters()
     model = Model(params)
     eq = find_equilibrium(model)
 
-    print("\n")
-    print(eq)    
-
-    f, y = convert_list_to_strategies(model, eq.x)
+    f, y = convert_list_to_strategies(model, eq)
     f, y = round_strategies(f, y, decimal_places = ROUND_PRECISION)
 
     print("\n\nTRANSMITTER STRATEGY: ")
     print(f)
-    print("\n\nJAMMER STRATEGY: ")
+    print("\nJAMMER STRATEGY: ")
     print(y)
-    print("\n")
+    print()
 
     validate_transmit_strategy(model, f, precision = ROUND_PRECISION - 2)
     validate_jammer_strategy(model, y, precision = ROUND_PRECISION - 2)
 
 if __name__ == "__main__":
-    main()
+
+    start_time = time.time()
+
+    run = Thread(target=run_optimization)
+    run.start()
+
+    try:
+        while optimization_not_complete:
+            time.sleep(1)
+            pass
+    except KeyboardInterrupt:
+        stop_optimization = True
+        print("Optimization terminated early using KeyboardInterrupt")
+
+    run.join()
+
+    print(f"Elapsed time: {round(time.time() - start_time, 2)} seconds\n")
