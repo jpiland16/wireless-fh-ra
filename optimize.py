@@ -2,6 +2,7 @@ import time
 from markov import QTable
 from model import Model, validate_jammer_strategy, validate_transmit_strategy
 from parameters import get_default_parameters
+from post_optimization import confirm, simulate
 
 from scipy.optimize import minimize, LinearConstraint
 import numpy as np
@@ -238,6 +239,8 @@ def round_strategies(f: dict, y: 'list[float]', decimal_places: int):
 
 def run_optimization():
 
+    start_time = time.time()
+
     print("\nOptimizing the game... (CTRL-C to stop)")
 
     params = get_default_parameters()
@@ -253,13 +256,17 @@ def run_optimization():
     print(y)
     print()
 
-    validate_transmit_strategy(model, f, precision = ROUND_PRECISION - 2)
-    validate_jammer_strategy(model, y, precision = ROUND_PRECISION - 2)
+    # validate_transmit_strategy(model, f, precision = ROUND_PRECISION - 2)
+    # validate_jammer_strategy(model, y, precision = ROUND_PRECISION - 2)
+
+    print(f"Elapsed time: {round(time.time() - start_time, 2)} seconds\n")
+
+    if confirm("Run a simulation with these strategies?"):
+        simulate(model, f, y, precision = ROUND_PRECISION - 2)
 
 if __name__ == "__main__":
 
     if GENTLE_STOPPING:
-        start_time = time.time()
 
         run = Thread(target=run_optimization)
         run.start()
@@ -270,10 +277,9 @@ if __name__ == "__main__":
                 pass
         except KeyboardInterrupt:
             stop_optimization = True
-            print("Optimization terminated early using KeyboardInterrupt")
+            print("\nEnded process using KeyboardInterrupt")
 
         run.join()
 
-        print(f"Elapsed time: {round(time.time() - start_time, 2)} seconds\n")
     else:
         run_optimization()

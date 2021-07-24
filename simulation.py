@@ -5,13 +5,13 @@ from model import Model, validate_jammer_strategy, validate_transmit_strategy
 
 class Simulation:
     def __init__(self, f: dict, y: 'list[float]', model: Model, 
-            initial_state: str = "j", debug: bool = False):
+            initial_state: str = "j", precision: int = -1, debug: bool = False):
 
         self.model = model
         params = model.params
 
-        validate_transmit_strategy(model, f)
-        validate_jammer_strategy(model, y)
+        validate_transmit_strategy(model, f, precision)
+        validate_jammer_strategy(model, y, precision)
 
         self.debug = debug
         self.params = params
