@@ -1,12 +1,21 @@
 from markov import QTable
 from model import Model
-from parameters import Parameters, get_default_parameters
+from parameters import Parameters, get_default_parameters, validate_jammer_strategy, validate_transmit_strategy
 
 from scipy.optimize import minimize, LinearConstraint
 import numpy as np
 
 DELTA = 0.9
 CUTOFF = 0.9
+
+class OptimizationProgress():
+    def __init__(self):
+        self.iterations = 0
+
+    def __call__(self, x0):
+        self.iterations += 1
+        print(f"Optimizing... iteration #{self.iterations} " + 
+            f"(xk = {str(x0)[:10]}...)  \r", end="")
 
 def convert_strategies_to_list(f: dict, y: 'list[float]'):
     vector = []
@@ -98,13 +107,19 @@ def create_constraints(model: Model, vec_size: int):
     coeffs = [1 if i >= vector_offset else 0 for i in range(vec_size)]
     constraints.append(LinearConstraint(coeffs, 1, 1))
 
+    # Ensure the jammer meets its average power constraint
+    coeffs = [0 for _ in range(vector_offset)]
+    for p in model.params.p_jam:
+        coeffs.append(p)
+    constraints.append(LinearConstraint(coeffs, 0, 1))
+
     return constraints
 
 def create_bounds(vec_size: int):
     bounds = []
     for _ in range(vec_size):
         bounds.append((0, 1))
-        
+
     return bounds
 
 def create_random_strategies(params: Parameters, model: Model):
@@ -125,13 +140,30 @@ def find_equilibrium(params: Parameters):
     constraints = create_constraints(model, len(x0))
     bounds = create_bounds(len(x0))
 
+    progress = OptimizationProgress()
+
     return minimize(objective_function, x0, args=params_tuple, 
-        bounds=bounds, constraints=constraints)
+        bounds=bounds, constraints=constraints, callback=progress)
+
+def optim_callback():
+    pass
 
 def main():
     params = get_default_parameters()
+    model = Model(params)
     eq = find_equilibrium(params)
+    print()
     print(eq)    
+
+    f, y = convert_list_to_strategies(params, eq.x)
+    print("\n\nTRANSMITTER STRATEGY: ")
+    print(f)
+    print("\n\nJAMMER STRATEGY: ")
+    print(y)
+    print("\n")
+
+    validate_transmit_strategy(params, f, model.state_space, model.action_space)
+    validate_jammer_strategy(params, y)
 
 if __name__ == "__main__":
     main()

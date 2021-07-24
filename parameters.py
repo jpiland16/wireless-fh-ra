@@ -183,7 +183,7 @@ def get_default_parameters():
     return Parameters(
         k = 4,
         m = 7,
-        p_avg = 0.83 * p_max,
+        p_avg = 0.4 * p_max,
         p_max = p_max,
         c = 50,
         l = 25,
