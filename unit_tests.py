@@ -68,9 +68,9 @@ def test_run_simulation():
     y = create_demo_jammer_strategy(model)
 
     simulation = Simulation(f, y, model)
-    tx_reward = simulation.run()
+    tx_reward, success = simulation.run()
 
-    print(f"Transmitter reward: {tx_reward}")
+    print(f"Transmitter reward: {tx_reward}, success {success}")
 
 def test_multiple_simulation():
     
@@ -82,17 +82,32 @@ def test_multiple_simulation():
 
     simulation = Simulation(f, y, model)
     tx_rewards = []
+    tx_successes = []
 
     for _ in tqdm(range(2000)):
-        tx_rewards.append(simulation.run())
+        reward, success = simulation.run()
+        tx_rewards.append(reward)
+        tx_successes.append(success)
         
-    print(f"(Analyzing: average reward per unit time over entire simulation)\n"+
+    print(f"Average reward per unit time over entire simulation\n"+
           f"MEAN: {round(mean(tx_rewards), 4)}, " + 
           f"MEDIAN: {round(median(tx_rewards), 4)}, " +
           f"STDEV: {round(stdev(tx_rewards), 4)}"
     )
+
+    print(f"Success rate\n"+
+          f"MEAN: {round(mean(tx_successes), 4)}, " + 
+          f"MEDIAN: {round(median(tx_successes), 4)}, " +
+          f"STDEV: {round(stdev(tx_successes), 4)}"
+    )
     
-    plt.hist(tx_rewards, bins = 200)
+    fig, (ax1, ax2) = plt.subplots(ncols = 2)
+
+    ax1.set_title("Reward")
+    ax1.hist(tx_rewards, bins = 200)
+    ax2.set_title("Success rate")
+    ax2.hist(tx_successes, bins = 200)
+
     plt.show()
 
 def test_qtable_as_f():
@@ -150,11 +165,11 @@ def main():
     # test_validate_jammer_strategy()
     # test_validate_transmit_strategy()
     # test_run_simulation()
-    # test_multiple_simulation()
+    test_multiple_simulation()
     # test_qtable_as_f()
     # test_convert_parameters()
     # test_convert_strategies()
-    test_random_strategies()
+    # test_random_strategies()
 
 if __name__ == "__main__":
     main()

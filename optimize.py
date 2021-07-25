@@ -1,6 +1,6 @@
 import time
 from markov import QTable
-from model import Model, validate_jammer_strategy, validate_transmit_strategy
+from model import Model
 from parameters import get_default_parameters
 from post_optimization import confirm, simulate
 
@@ -10,7 +10,7 @@ from copy import deepcopy
 from threading import Thread
 
 DELTA = 0.9
-TIME_AHEAD = 10 # How many timesteps ahead to consider (before ending recursion)
+TIME_AHEAD = 0 # How many timesteps ahead to consider (before ending recursion)
 ROUND_PRECISION = 4 # Must be greater than or equal to 2 (see rounding in main)
 GENTLE_STOPPING = True
 
@@ -197,7 +197,7 @@ def create_random_strategies(model: Model):
     y = [1 / rate_count for _ in range(rate_count)]
     return q_table, y 
 
-def find_equilibrium(model: Model):
+def find_equilibrium(model: Model, show_output: bool):
     global optimization_not_complete
     
     f, y = create_random_strategies(model)
@@ -206,7 +206,7 @@ def find_equilibrium(model: Model):
     constraints = create_constraints(model, len(x0))
     bounds = create_bounds(len(x0))
 
-    progress = OptimizationProgress()
+    progress = OptimizationProgress() if show_output else None
 
     memfunc = MemoryFunctions(model)
     fun = StoppableFunction(lambda x: objective_function(x, memfunc))
@@ -237,30 +237,35 @@ def round_strategies(f: dict, y: 'list[float]', decimal_places: int):
 
     return f, y
 
-def run_optimization():
-    global model, f, y
+def optimize_game(show_output = False):
 
     start_time = time.time()
 
-    print("\nOptimizing the game... (CTRL-C to stop)")
+    if show_output:
+        print("\nOptimizing the game... (CTRL-C to stop)")
 
     params = get_default_parameters()
     model = Model(params)
-    eq = find_equilibrium(model)
+    eq = find_equilibrium(model, show_output)
 
     f, y = convert_list_to_strategies(model, eq)
     f, y = round_strategies(f, y, decimal_places = ROUND_PRECISION)
 
-    print("\n\nTRANSMITTER STRATEGY: ")
-    print(f)
-    print("\nJAMMER STRATEGY: ")
-    print(y)
-    print()
+    if show_output:
+        print("\n\nTRANSMITTER STRATEGY: ")
+        print(f)
+        print("\nJAMMER STRATEGY: ")
+        print(y)
+        print()
 
-    # validate_transmit_strategy(model, f, precision = ROUND_PRECISION - 2)
-    # validate_jammer_strategy(model, y, precision = ROUND_PRECISION - 2)
+    if show_output:
+        print(f"Elapsed time: {round(time.time() - start_time, 2)} seconds\n")
 
-    print(f"Elapsed time: {round(time.time() - start_time, 2)} seconds\n")
+    return model, f, y
+
+def run_optimization():
+    global model, f, y
+    model, f, y = optimize_game(show_output = True)
 
 if __name__ == "__main__":
 
@@ -275,7 +280,7 @@ if __name__ == "__main__":
                 pass
         except KeyboardInterrupt:
             stop_optimization = True
-            print("\Optimization terminated early using KeyboardInterrupt")
+            print("Optimization terminated early using KeyboardInterrupt")
 
         run.join()
 

@@ -24,6 +24,7 @@ class Simulation:
     def reset(self):
         self.state = self.initial_state
         self.total_tx_reward = 0
+        self.message_success_count = 0
 
         self.reset_pn_sequence()
         self.reset_jam_sequence()
@@ -83,6 +84,7 @@ class Simulation:
             self.total_tx_reward -= self.params.l
         else:
             self.total_tx_reward += self.params.rates[rate_index]
+            self.message_success_count += 1
 
         # Determine whether the jammer overheard an ACK or NACK
         jammer_overheard_something = channel in jammed_channels
@@ -168,9 +170,9 @@ class Simulation:
 
     def run(self):
         """
-        Play a game of the specified length and return the total 
-        transmitter reward. Resets the simulation to the original state
-        after run is complete.
+        Play a game of the specified length and return (1) the total 
+        transmitter reward and (2) the percent success. 
+        Resets the simulation to the original state after run is complete.
         """
         game_time = 0
         while game_time < self.params.t:
@@ -178,6 +180,7 @@ class Simulation:
             game_time += 1
 
         reward = self.total_tx_reward
+        successes = self.message_success_count
         self.reset() 
 
-        return reward / self.params.t
+        return reward / self.params.t, successes / self.params.t
