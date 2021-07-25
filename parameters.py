@@ -1,3 +1,10 @@
+# defaults
+p_max = 2
+alpha = 1
+sigma_squared = 0.01
+p_recv = 1
+frac = 0.4
+
 def validate_param(msg: str, p_name: str, expected, actual):
         """
         Raises an error with message `msg` when the parameter of name `p_name` 
@@ -9,9 +16,11 @@ def validate_param(msg: str, p_name: str, expected, actual):
                              f"{str(actual)}.")
 
 class Parameters:
-    def __init__(self, k: int, m: int, p_avg: float, p_max: float, c: int, 
-            l: int, n: int, alpha: float, sigma_squared: float, p_recv: float,
-            rates: 'list[int]', t: int):
+    def __init__(self, k: int = 4, m: int = 7, p_avg: float = frac * p_max, 
+            p_max: float = p_max, c: int = 50, l: int = 25, n: int = 1, 
+            alpha: float = alpha, sigma_squared: float = sigma_squared, 
+            p_recv: float = p_recv, 
+            rates: 'list[int]' = [6, 9, 12, 18, 24, 36, 48, 54], t: int = 500):
         """
         Parameters:
          - `k`: the number of channels
@@ -129,24 +138,3 @@ class Parameters:
     
     def get_from_tuple(t: tuple):
         return Parameters(*t)
-
-def get_default_parameters():    
-    p_max = 2
-    alpha = 1
-    sigma_squared = 0.01
-    p_recv = 1
-
-    return Parameters(
-        k = 4,
-        m = 7,
-        p_avg = 0.4 * p_max,
-        p_max = p_max,
-        c = 50,
-        l = 25,
-        n = 1, 
-        alpha = alpha,
-        sigma_squared = sigma_squared,
-        p_recv = p_recv,
-        rates = [6, 9, 12, 18, 24, 36, 48, 54],
-        t = 500
-    )

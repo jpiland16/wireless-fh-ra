@@ -1,7 +1,7 @@
 import time
 from markov import QTable
 from model import Model
-from parameters import get_default_parameters
+from parameters import Parameters
 from post_optimization import confirm, simulate
 
 from scipy.optimize import minimize, LinearConstraint
@@ -244,7 +244,7 @@ def optimize_game(show_output = False):
     if show_output:
         print("\nOptimizing the game... (CTRL-C to stop)")
 
-    params = get_default_parameters()
+    params = Parameters()
     model = Model(params)
     eq = find_equilibrium(model, show_output)
 

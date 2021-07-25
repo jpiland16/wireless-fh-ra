@@ -1,6 +1,6 @@
 import random, math
 
-from parameters import Parameters, get_default_parameters
+from parameters import Parameters
 from model import Model, validate_jammer_strategy, validate_transmit_strategy
 
 class Simulation:

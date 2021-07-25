@@ -1,6 +1,6 @@
 from markov import QTable
 from simulation import Simulation
-from parameters import Parameters, get_default_parameters
+from parameters import Parameters
 from optimize import convert_strategies_to_list, convert_list_to_strategies
 from model import Model, validate_transmit_strategy, validate_jammer_strategy
 
@@ -10,14 +10,14 @@ from statistics import stdev, median, mean
 
 def test_create_parameters():
 
-    params = get_default_parameters()
+    params = Parameters()
 
     print(repr(params))
     print(params)
 
 def test_validate_jammer_strategy():
     
-    params = get_default_parameters()
+    params = Parameters()
     model = Model(params)
     y = create_demo_jammer_strategy(model)
     validate_jammer_strategy(model, y)
@@ -33,7 +33,7 @@ def create_demo_jammer_strategy(model: Model):
 
 def test_validate_transmit_strategy():
 
-    params = get_default_parameters()
+    params = Parameters()
     model = Model(params)
     f = create_demo_transmit_strategy(model)
     validate_transmit_strategy(model, f)
@@ -61,7 +61,7 @@ def create_demo_transmit_strategy(model: Model):
 
 def test_run_simulation():
     
-    params = get_default_parameters()
+    params = Parameters()
     model = Model(params)
 
     f = create_demo_transmit_strategy(model)
@@ -74,7 +74,7 @@ def test_run_simulation():
 
 def test_multiple_simulation():
     
-    params = get_default_parameters()
+    params = Parameters()
     model = Model(params)
 
     f = create_demo_transmit_strategy(model)
@@ -112,7 +112,7 @@ def test_multiple_simulation():
 
 def test_qtable_as_f():
 
-    params = get_default_parameters()
+    params = Parameters()
     model = Model(params)
 
     qtable = QTable(model)
@@ -120,7 +120,7 @@ def test_qtable_as_f():
 
 def test_convert_parameters():
 
-    params = get_default_parameters()
+    params = Parameters()
     same_params = Parameters.get_from_tuple(params.convert_to_tuple())
 
     print(params)
@@ -128,7 +128,7 @@ def test_convert_parameters():
 
 def test_convert_strategies():
 
-    params =  get_default_parameters()
+    params =  Parameters()
     model = Model(params)
 
     f = create_demo_transmit_strategy(model)
@@ -150,7 +150,7 @@ def test_convert_strategies():
 
 def test_random_strategies():
 
-    params = get_default_parameters()
+    params = Parameters()
     model = Model(params)
 
     qtable = QTable(model)
@@ -161,15 +161,15 @@ def test_random_strategies():
     print(sim.run())
 
 def main():
-    # test_create_parameters()
-    # test_validate_jammer_strategy()
-    # test_validate_transmit_strategy()
-    # test_run_simulation()
+    test_create_parameters()
+    test_validate_jammer_strategy()
+    test_validate_transmit_strategy()
+    test_run_simulation()
     test_multiple_simulation()
-    # test_qtable_as_f()
-    # test_convert_parameters()
-    # test_convert_strategies()
-    # test_random_strategies()
+    test_qtable_as_f()
+    test_convert_parameters()
+    test_convert_strategies()
+    test_random_strategies()
 
 if __name__ == "__main__":
     main()
