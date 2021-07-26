@@ -9,8 +9,8 @@ import numpy as np
 from copy import deepcopy
 from threading import Thread
 
-DELTA = 0.9
-TIME_AHEAD = 0 # How many timesteps ahead to consider (before ending recursion)
+DELTA = 0.6
+TIME_AHEAD = 10 # How many timesteps ahead to consider (before ending recursion)
 ROUND_PRECISION = 4 # Must be greater than or equal to 2 (see rounding in main)
 GENTLE_STOPPING = True
 
@@ -237,14 +237,14 @@ def round_strategies(f: dict, y: 'list[float]', decimal_places: int):
 
     return f, y
 
-def optimize_game(show_output = False):
+def optimize_game(params = Parameters(), show_output = False):
 
     start_time = time.time()
 
     if show_output:
-        print("\nOptimizing the game... (CTRL-C to stop)")
+        print(f"\nTIME_AHEAD = {TIME_AHEAD}")
+        print("Optimizing the game... (CTRL-C to stop)")
 
-    params = Parameters()
     model = Model(params)
     eq = find_equilibrium(model, show_output)
 

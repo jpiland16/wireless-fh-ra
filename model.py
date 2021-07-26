@@ -121,12 +121,12 @@ class Model:
             # errors to see what happens.
             p_discover_next = self.params.n / max(1, (self.params.k - 
                 self.params.n * x))
-            p_single_channel_attack = self.params.m * x / self.params.k
+            p_single_channel_attack = self.params.n * x / self.params.k
             
             probs["j"] = p_discover_next + p_single_channel_attack \
-                if x < self.params.k / self.params.m and \
+                if x < self.params.k / self.params.n and \
                 jammer_power_index > self.params.m - r else (
-                    p_single_channel_attack if x < self.params.k / self.params.m 
+                    p_single_channel_attack if x < self.params.k / self.params.n 
                     and sinr_single_attack < self.params.sinr_limits[r]
                     else 0
                 )
