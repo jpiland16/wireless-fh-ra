@@ -12,8 +12,7 @@ def figures_2_and_3():
     fh_only_24_rates = [24]
     fh_only_54_rates = [54]
 
-    variants = [fh_ra_rates, fh_only_54_rates, fh_only_24_rates, 
-        fh_only_6_rates]
+    variants = [fh_ra_rates]
 
     names = [
         "Joint FH and RA",
@@ -27,7 +26,7 @@ def figures_2_and_3():
     for i, rates in enumerate(variants):
         results[names[i]] = {}
 
-        for k in range(3, 4):
+        for k in range(3, 6):
             
             print(f"Optimizing:     {names[i]} for k = {k}")
 
@@ -39,7 +38,7 @@ def figures_2_and_3():
             tx_rewards = []
             tx_successes = []
 
-            for _ in range(2000):
+            for _ in range(1000):
                 reward, success = simulation.run()
                 tx_rewards.append(reward)
                 tx_successes.append(success)

@@ -65,19 +65,19 @@ class Model:
 
         # Equation 8
         if (next_state == "j" and action[0] == "h" 
-                and jammer_power_index > self.params.m - r):
+                and jammer_power_index >= self.params.m - r):
             return - self.params.l - self.params.c
 
         elif (next_state == "1" and action[0] == "h" 
-                and jammer_power_index <= self.params.m - r):
+                and jammer_power_index < self.params.m - r):
             return r - self.params.c
 
         elif (next_state == "j" and action[0] == "s"
-                and jammer_power_index > self.params.m - r):
+                and jammer_power_index >= self.params.m - r):
             return - self.params.l
 
         elif (next_state != "j" and action[0] == "s"
-                and jammer_power_index <= self.params.m - r):
+                and jammer_power_index < self.params.m - r):
             return r
         
         else:
@@ -95,13 +95,13 @@ class Model:
         # Equation 9
         if state == "j" and action[0] == "h":
             probs["j"] = self.params.n / (self.params.k - 1) \
-                if jammer_power_index > self.params.m - int(action[1:]) else 0
+                if jammer_power_index >= self.params.m - int(action[1:]) else 0
             probs["1"] = 1 - probs["j"]
         
         # Equation 11 (same as #9) ???
         elif action[0] == "h":
             probs["j"] = self.params.n / (self.params.k - 1) \
-            if jammer_power_index > self.params.m - int(action[1:]) else 0
+            if jammer_power_index >= self.params.m - int(action[1:]) else 0
             probs["1"] = 1 - probs["j"]
         
         # Equation 12   
@@ -125,9 +125,9 @@ class Model:
             
             probs["j"] = p_discover_next + p_single_channel_attack \
                 if x < self.params.k / self.params.n and \
-                jammer_power_index > self.params.m - r else (
+                jammer_power_index >= self.params.m - r else (
                     p_single_channel_attack if x < self.params.k / self.params.n 
-                    and sinr_single_attack < self.params.sinr_limits[r]
+                    and sinr_single_attack <= self.params.sinr_limits[r]
                     else 0
                 )
             probs[str(x + 1)] = 1 - probs["j"]
@@ -226,7 +226,7 @@ def validate_jammer_strategy(model: Model, y: 'list[float]',
     def jammer_validate(p_name: str, expected, actual):
         validate_param("jammer strategy", p_name, expected, actual)    
 
-    jammer_validate("number of elements", params.m + 1, len(y))
+    jammer_validate("number of elements", params.m + 2, len(y))
 
     for i, yi in enumerate(y):
         jammer_validate(f"0 <= y[{i}] <= 1", True, 0 <= yi and yi <= 1)

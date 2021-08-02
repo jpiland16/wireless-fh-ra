@@ -9,8 +9,8 @@ import numpy as np
 from copy import deepcopy
 from threading import Thread
 
-DELTA = 0.6
-TIME_AHEAD = 5 # How many timesteps ahead to consider (before ending recursion)
+DELTA = 1
+TIME_AHEAD = 10 # How many timesteps ahead to consider (before ending recursion)
 ROUND_PRECISION = 4 # Must be greater than or equal to 2 (see rounding in main)
 GENTLE_STOPPING = True
 
@@ -21,10 +21,12 @@ class OptimizationProgress():
     def __init__(self):
         self.iterations = 0
 
-    def __call__(self, x0):
+    def __call__(self, x0, extra_info=None):
         self.iterations += 1
         print(f"Iteration #{self.iterations} " + 
-            f"(xk = {str(x0)[:15]}...)  \r", end="")
+            f"(xk = {str(x0)[:15]}...)", end="")
+
+        print("  \r", end="")
 
 class StoppableFunction():
     def __init__(self, fun):
@@ -103,7 +105,7 @@ def convert_list_to_strategies(model: Model, vector: 'list'):
             f[state][action] = vector[i]
             i += 1
     
-    for _ in range(params.m + 1):
+    for _ in range(params.m + 2):
         y.append(vector[i])
         i += 1
 
@@ -118,6 +120,9 @@ def best_transmitter_value(memfunc: MemoryFunctions, state: str,
 
     if exponent > TIME_AHEAD:
         return 0
+
+    if len(y) != model.params.m + 1:
+        y = y[1:]
 
     return max(
         np.dot(model.reward_matrices[state], y) 
@@ -194,7 +199,7 @@ def create_random_strategies(model: Model):
     q_table = QTable(model)
     q_table.epsilon = 1 # Used to create completely random strategy
     rate_count = params.m + 1
-    y = [1 / rate_count for _ in range(rate_count)]
+    y = [0] + [1 / rate_count for _ in range(rate_count)]
     return q_table, y 
 
 def find_equilibrium(model: Model, show_output: bool):
@@ -213,7 +218,7 @@ def find_equilibrium(model: Model, show_output: bool):
 
     try:
         result = minimize(fun, x0, bounds=bounds, constraints=constraints, 
-            callback=progress).x
+            callback=progress, method="trust-constr").x
     except StopIteration:
         result = fun.last_input
     
@@ -237,7 +242,7 @@ def round_strategies(f: dict, y: 'list[float]', decimal_places: int):
 
     return f, y
 
-def optimize_game(params = Parameters(k = 10), show_output = False):
+def optimize_game(params = Parameters(k = 4), show_output = False):
 
     start_time = time.time()
 

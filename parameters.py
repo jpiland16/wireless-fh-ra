@@ -79,7 +79,7 @@ class Parameters:
         """
         Calculate and save the power levels of the jammer.
         """
-        self.p_jam = [ ((self.p_recv / self.sinr_limits[self.m - i]) 
+        self.p_jam = [0] + [ ((self.p_recv / self.sinr_limits[self.m - i]) 
             - self.sigma_squared) / self.alpha for i in range(self.m + 1)]
 
     def get_single_channel_attack_sinr(self, jammer_power_index: int):

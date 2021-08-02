@@ -25,9 +25,12 @@ def test_validate_jammer_strategy():
 def create_demo_jammer_strategy(model: Model):
     params = model.params
 
-    y = [0, 1]
-    for _ in range(params.m - 1):
-        y.append(0)
+    y = [0]
+    for i in range(params.m + 1):
+        if i == 0:
+            y.append(1)
+        else:
+            y.append(0)
 
     return y
 
@@ -155,9 +158,9 @@ def test_random_strategies():
 
     qtable = QTable(model)
     qtable.epsilon = 1
-    y = [1 / (params.m + 1) for _ in range(params.m + 1)]
+    y = [1 / (params.m + 2) for _ in range(params.m + 2)]
 
-    sim = Simulation(qtable, y, model)
+    sim = Simulation(qtable, y, model, precision = 4)
     print(sim.run())
 
 def main():
